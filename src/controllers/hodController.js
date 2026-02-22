@@ -31,8 +31,9 @@ exports.getPendingEvents = (req, res) => {
 };
 
 
+
 // =====================================
-// 🔹 Approve Event (With Notification)
+// 🔹 Approve Event
 // =====================================
 exports.approveEvent = (req, res) => {
   const eventId = req.params.eventId;
@@ -40,14 +41,24 @@ exports.approveEvent = (req, res) => {
   db.beginTransaction((err) => {
     if (err) return errorResponse(res, 'Transaction start failed');
 
-    // 1️⃣ Get event creator
+    // 1️⃣ Get event creator + status
     db.query(
-      'SELECT created_by FROM events WHERE event_id = ?',
+      'SELECT created_by, status FROM events WHERE event_id = ?',
       [eventId],
       (err, result) => {
         if (err || result.length === 0) {
           return db.rollback(() =>
             errorResponse(res, 'Event not found')
+          );
+        }
+
+        // ✅ Business Validation (Return 400 instead of 500)
+        if (result[0].status !== EVENT_STATUS.PENDING) {
+          return db.rollback(() =>
+            res.status(400).json({
+              success: false,
+              message: 'Only pending events can be approved'
+            })
           );
         }
 
@@ -75,7 +86,7 @@ exports.approveEvent = (req, res) => {
                   );
                 }
 
-                // 4️⃣ Insert notification for lecturer
+                // 4️⃣ Insert notification
                 db.query(
                   `INSERT INTO notifications
                    (event_id, user_id, message, notification_type, sent_at)
@@ -115,8 +126,9 @@ exports.approveEvent = (req, res) => {
 };
 
 
+
 // =====================================
-// 🔹 Reject Event (With Notification)
+// 🔹 Reject Event
 // =====================================
 exports.rejectEvent = (req, res) => {
   const eventId = req.params.eventId;
@@ -125,14 +137,24 @@ exports.rejectEvent = (req, res) => {
   db.beginTransaction((err) => {
     if (err) return errorResponse(res, 'Transaction start failed');
 
-    // 1️⃣ Get event creator
+    // 1️⃣ Get event creator + status
     db.query(
-      'SELECT created_by FROM events WHERE event_id = ?',
+      'SELECT created_by, status FROM events WHERE event_id = ?',
       [eventId],
       (err, result) => {
         if (err || result.length === 0) {
           return db.rollback(() =>
             errorResponse(res, 'Event not found')
+          );
+        }
+
+        // ✅ Business Validation (Return 400 instead of 500)
+        if (result[0].status !== EVENT_STATUS.PENDING) {
+          return db.rollback(() =>
+            res.status(400).json({
+              success: false,
+              message: 'Only pending events can be rejected'
+            })
           );
         }
 
@@ -160,7 +182,7 @@ exports.rejectEvent = (req, res) => {
                   );
                 }
 
-                // 4️⃣ Insert notification for lecturer
+                // 4️⃣ Insert notification
                 db.query(
                   `INSERT INTO notifications
                    (event_id, user_id, message, notification_type, sent_at)
@@ -202,8 +224,9 @@ exports.rejectEvent = (req, res) => {
 };
 
 
+
 // =====================================
-// 🔔 Get Notifications (NEW STRUCTURE)
+// 🔔 Get Notifications
 // =====================================
 exports.getNotifications = (req, res) => {
   const userId = req.user.id;

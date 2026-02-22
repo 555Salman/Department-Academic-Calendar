@@ -1,7 +1,8 @@
 const db = require('../config/db');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { sendResetEmail } = require('../services/emailService');
 
 
 // =======================
@@ -127,7 +128,7 @@ exports.login = (req, res) => {
 
 
 // =======================
-// 🔐 FORGOT PASSWORD
+// 🔐 FORGOT PASSWORD (EMAIL ENABLED)
 // =======================
 exports.forgotPassword = (req, res) => {
   const { email } = req.body;
@@ -136,33 +137,46 @@ exports.forgotPassword = (req, res) => {
     return res.status(400).json({ message: 'Email is required' });
   }
 
-  db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
+  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
     if (err) return res.status(500).json({ message: 'Database error' });
 
+    // Do not reveal whether user exists
     if (results.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(200).json({
+        message: 'If this email exists, a password reset link has been sent.'
+      });
     }
 
     const user = results[0];
 
-    // Generate secure token
+
     const token = crypto.randomBytes(32).toString('hex');
 
-    // 15 minute expiry
+
     const expiry = new Date(Date.now() + 15 * 60 * 1000);
 
     db.query(
       'INSERT INTO password_reset_tokens (user_id, token, expiry) VALUES (?, ?, ?)',
       [user.id, token, expiry],
-      (insertErr) => {
+      async (insertErr) => {
         if (insertErr)
           return res.status(500).json({ message: 'Error generating reset token' });
 
-        // ⚠️ For now return token (for Postman testing)
-        return res.status(200).json({
-          message: 'Password reset token generated',
-          token   // REMOVE THIS after email integration
-        });
+        const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+
+        try {
+          await sendResetEmail(email, resetLink);
+
+          return res.status(200).json({
+            message: 'If this email exists, a password reset link has been sent.'
+          });
+
+        } catch (emailError) {
+          console.error("Email sending failed:", emailError);
+          return res.status(500).json({
+            message: 'Failed to send reset email'
+          });
+        }
       }
     );
   });
@@ -189,13 +203,13 @@ exports.resetPassword = async (req, res) => {
       if (err) return res.status(500).json({ message: 'Database error' });
 
       if (results.length === 0) {
-        return res.status(400).json({ message: 'Invalid token' });
+        return res.status(400).json({ message: 'Invalid or expired token' });
       }
 
       const resetToken = results[0];
 
       if (new Date(resetToken.expiry) < new Date()) {
-        return res.status(400).json({ message: 'Token expired' });
+        return res.status(400).json({ message: 'Invalid or expired token' });
       }
 
       try {

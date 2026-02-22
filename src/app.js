@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 
@@ -5,11 +7,21 @@ require('./config/db');
 
 const app = express();
 
-app.use(cors());
+// ===============================
+// 🔐 Secure CORS Configuration
+// ===============================
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+}));
+
+// ===============================
+// 🔄 Middleware
+// ===============================
 app.use(express.json());
 
 // ===============================
-// ROUTES IMPORT
+// 📦 ROUTES IMPORT
 // ===============================
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -23,7 +35,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const todoRoutes = require('./routes/todoRoutes');
 
 // ===============================
-// ROUTES REGISTER
+// 🚀 ROUTES REGISTER
 // ===============================
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -37,10 +49,27 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 // ===============================
-// ROOT TEST
+// 🏠 Root Route
 // ===============================
 app.get('/', (req, res) => {
   res.send('Department Calendar Backend Running 🚀');
 });
 
+// ===============================
+// ❌ 404 Handler
+// ===============================
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
+  });
+});
+
+// ===============================
+// ⚠ Global Error Handler
+// ===============================
+const { errorHandler } = require('./middlewares/errorMiddleware');
+app.use(errorHandler);
+
+// ===============================
 module.exports = app;

@@ -21,22 +21,19 @@ exports.createEvent = async (req, res) => {
 
     try {
 
-      // 1️⃣ TIME VALIDATION
+      // 1️⃣ Validate Time
       if (new Date(end_datetime) <= new Date(start_datetime)) {
         throw new Error("End time must be after start time");
       }
 
-      // 2️⃣ LOCATION CONFLICT CHECK
+      // 2️⃣ Location Conflict Check
       const locationConflict = await new Promise((resolve, reject) => {
         db.query(
           `SELECT * FROM events
            WHERE location = ?
            AND (start_datetime < ? AND end_datetime > ?)`,
           [location, end_datetime, start_datetime],
-          (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          }
+          (err, result) => err ? reject(err) : resolve(result)
         );
       });
 
@@ -44,17 +41,14 @@ exports.createEvent = async (req, res) => {
         throw new Error("Time slot already booked for this location");
       }
 
-      // 3️⃣ LECTURER DOUBLE BOOKING CHECK
+      // 3️⃣ Lecturer Double Booking Check
       const lecturerConflict = await new Promise((resolve, reject) => {
         db.query(
           `SELECT * FROM events
            WHERE created_by = ?
            AND (start_datetime < ? AND end_datetime > ?)`,
           [created_by, end_datetime, start_datetime],
-          (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          }
+          (err, result) => err ? reject(err) : resolve(result)
         );
       });
 
@@ -62,7 +56,7 @@ exports.createEvent = async (req, res) => {
         throw new Error("You already have another event at this time");
       }
 
-      // 4️⃣ INSERT EVENT
+      // 4️⃣ Insert Event
       const insertResult = await new Promise((resolve, reject) => {
         db.query(
           `INSERT INTO events
@@ -78,25 +72,18 @@ exports.createEvent = async (req, res) => {
             userRole === "ADMIN" ? "APPROVED" : "PENDING",
             created_by
           ],
-          (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          }
+          (err, result) => err ? reject(err) : resolve(result)
         );
       });
 
       const eventId = insertResult.insertId;
 
-      // 5️⃣ CREATE NOTIFICATION FOR HOD (if not ADMIN)
-      if (userRole !== "ADMIN") {
-
+      // 5️⃣ Notify HOD if Lecturer
+      if (userRole === "LECTURER") {
         const hodResult = await new Promise((resolve, reject) => {
           db.query(
             `SELECT id FROM users WHERE role = 'HOD' LIMIT 1`,
-            (err, result) => {
-              if (err) reject(err);
-              else resolve(result);
-            }
+            (err, result) => err ? reject(err) : resolve(result)
           );
         });
 
@@ -114,10 +101,7 @@ exports.createEvent = async (req, res) => {
                 "New event pending approval",
                 "APPROVAL_REQUEST"
               ],
-              (err) => {
-                if (err) reject(err);
-                else resolve();
-              }
+              (err) => err ? reject(err) : resolve()
             );
           });
         }
@@ -125,9 +109,9 @@ exports.createEvent = async (req, res) => {
 
       db.commit(err => {
         if (err) {
-          return db.rollback(() => {
-            res.status(500).json({ error: err.message });
-          });
+          return db.rollback(() =>
+            res.status(500).json({ error: err.message })
+          );
         }
 
         res.status(201).json({
@@ -136,15 +120,15 @@ exports.createEvent = async (req, res) => {
       });
 
     } catch (error) {
-      db.rollback(() => {
-        res.status(400).json({ error: error.message });
-      });
+      db.rollback(() =>
+        res.status(400).json({ error: error.message })
+      );
     }
   });
 };
 
 // =====================================
-// 🔹 GET EVENTS (Role-Based + Date Filter)
+// 🔹 GET EVENTS
 // =====================================
 exports.getEvents = (req, res) => {
 
@@ -229,10 +213,7 @@ exports.updateEvent = async (req, res) => {
       db.query(
         `SELECT * FROM events WHERE event_id = ?`,
         [eventId],
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }
+        (err, result) => err ? reject(err) : resolve(result)
       );
     });
 
@@ -250,25 +231,6 @@ exports.updateEvent = async (req, res) => {
       return res.status(400).json({ error: "End time must be after start time" });
     }
 
-    const conflict = await new Promise((resolve, reject) => {
-      db.query(
-        `SELECT * FROM events
-         WHERE event_id != ?
-         AND location = ?
-         AND (start_datetime < ? AND end_datetime > ?)`,
-        [eventId, location, end_datetime, start_datetime],
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }
-      );
-    });
-
-    if (conflict.length > 0) {
-      return res.status(400).json({
-        error: "Time slot already booked for this location"
-      });
-    }
 
     let newStatus = event.status;
     if (role === "LECTURER" && event.status === "APPROVED") {
@@ -290,10 +252,7 @@ exports.updateEvent = async (req, res) => {
           newStatus,
           eventId
         ],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
+        (err) => err ? reject(err) : resolve()
       );
     });
 
@@ -305,7 +264,7 @@ exports.updateEvent = async (req, res) => {
 };
 
 // =====================================
-// 🔹 DELETE EVENT
+// 🔹 DELETE EVENT (FINAL CLEAN VERSION)
 // =====================================
 exports.deleteEvent = (req, res) => {
 
@@ -326,13 +285,12 @@ exports.deleteEvent = (req, res) => {
 
       const event = result[0];
 
+      // Lecturer ownership protection
       if (role === "LECTURER" && event.created_by !== userId) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      if (role === "HOD") {
-        return res.status(403).json({ message: "HOD cannot delete events" });
-      }
+      // ADMIN automatically allowed
 
       db.query(
         `DELETE FROM events WHERE event_id = ?`,

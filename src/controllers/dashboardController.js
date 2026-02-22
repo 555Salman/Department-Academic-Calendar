@@ -149,6 +149,24 @@ exports.getDashboardSummary = async (req, res) => {
       });
     }
 
+    // ===============================
+    // 🛠 TO DASHBOARD (Added)
+    // ===============================
+    if (role === "TO") {
+      return res.json({
+        role,
+        message: "Technical Officer Dashboard",
+        system_status: "Operational"
+      });
+    }
+
+    // ===============================
+    // ❌ Fallback for Unknown Roles
+    // ===============================
+    return res.status(403).json({
+      message: "Unauthorized role"
+    });
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
