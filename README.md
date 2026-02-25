@@ -271,3 +271,5 @@ Built for the Department of Computer Engineering, University of Jaffna
 ---
 
 **Note:** This is a frontend-only demo. For production, implement proper backend with authentication and database.
+# se-department-calendar-backend
+Backend service for the SE Department Calendar System
