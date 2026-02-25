@@ -30,7 +30,7 @@ export default function Sidebar({ collapsed = false }: SidebarProps) {
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/calendar', icon: Calendar, label: 'Calendar' },
-    { to: '/notifications', icon: Bell, label: 'Notifications', badge: 2 },
+    { to: '/notifications', icon: Bell, label: 'Notifications' },
     { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { to: '/documents', icon: FileText, label: 'Documents', hidden: !isStaff },
   ];

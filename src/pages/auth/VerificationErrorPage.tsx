@@ -43,9 +43,9 @@ export default function VerificationErrorPage() {
 
         {/* Footer Links */}
         <div className="mt-8 flex justify-center gap-6 text-sm text-gray-500">
-          <a href="/privacy" className="hover:text-gray-700">Privacy Policy</a>
-          <a href="/terms" className="hover:text-gray-700">Terms of Service</a>
-          <a href="/consent" className="hover:text-gray-700">Consent Preferences</a>
+          <a href="/privacy" className="hover:text-gray-700" onClick={(e) => e.preventDefault()}>Privacy Policy</a>
+          <a href="/terms" className="hover:text-gray-700" onClick={(e) => e.preventDefault()}>Terms of Service</a>
+          <a href="/consent" className="hover:text-gray-700" onClick={(e) => e.preventDefault()}>Consent Preferences</a>
         </div>
       </div>
     </div>

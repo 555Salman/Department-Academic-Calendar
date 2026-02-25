@@ -28,7 +28,7 @@ export default function SettingsPage() {
 
   // Display settings
   const [darkMode, setDarkMode] = useState(false);
-  const [showDescriptions, setShowDescriptions] = useState(true);
+  const [showDescriptions, setShowDescriptions] = useState(false);
   const [use24Hour, setUse24Hour] = useState(false);
   const [firstDayOfWeek, setFirstDayOfWeek] = useState('sunday');
 

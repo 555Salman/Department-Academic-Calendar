@@ -42,11 +42,18 @@ export default function TasksPage() {
     setTasks(getStoredTasks(userId));
   }, [userId]);
 
-  const lists: { id: TaskList; label: string; icon: typeof CheckSquare; color: string }[] = [
-    { id: 'my-day', label: 'My Day', icon: LayoutDashboard, color: 'bg-blue-500' },
-    { id: 'important', label: 'Important', icon: Flame, color: 'bg-red-500' },
-    { id: 'planned', label: 'Planned', icon: Calendar, color: 'bg-emerald-500' },
-    { id: 'tasks', label: 'Tasks', icon: CheckSquare, color: 'bg-primary' },
+  const listActiveClasses: Record<TaskList, string> = {
+    'my-day': 'bg-blue-500 text-white',
+    'important': 'bg-red-500 text-white',
+    'planned': 'bg-emerald-500 text-white',
+    'tasks': 'bg-primary text-white',
+  };
+
+  const lists: { id: TaskList; label: string; icon: typeof CheckSquare }[] = [
+    { id: 'my-day', label: 'My Day', icon: LayoutDashboard },
+    { id: 'important', label: 'Important', icon: Flame },
+    { id: 'planned', label: 'Planned', icon: Calendar },
+    { id: 'tasks', label: 'Tasks', icon: CheckSquare },
   ];
 
   const toggleTask = (taskId: string) => {
@@ -137,7 +144,7 @@ export default function TasksPage() {
                 key={list.id}
                 onClick={() => setActiveList(list.id)}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors ${
-                  isActive ? `${list.color} text-white` : 'text-gray-700 hover:bg-gray-100'
+                  isActive ? listActiveClasses[list.id] : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 <Icon className="w-5 h-5" />

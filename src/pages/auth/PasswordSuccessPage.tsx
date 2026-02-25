@@ -24,9 +24,6 @@ export default function PasswordSuccessPage() {
             <Link to="/login" className="btn-primary w-full btn-lg inline-flex justify-center">
               Go to Login
             </Link>
-            <Link to="/" className="btn-outline w-full inline-flex justify-center">
-              Back to Home
-            </Link>
           </div>
         </div>
       </div>

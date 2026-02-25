@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { mockVerificationCode } from '../../data/mockData';
 
 export default function VerifyCodePage() {
   const navigate = useNavigate();
@@ -65,8 +66,13 @@ export default function VerifyCodePage() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // For demo, accept any 4-digit code
     setIsLoading(false);
+
+    if (fullCode !== mockVerificationCode) {
+      navigate('/verification-error');
+      return;
+    }
+
     navigate('/reset-password', { state: { email, code: fullCode } });
   };
 

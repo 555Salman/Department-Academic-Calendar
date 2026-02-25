@@ -596,3 +596,6 @@ export const verifyCredentials = (email: string, password: string): boolean => {
 export const findUserByEmail = (email: string): User | undefined => {
   return mockUsers.find(u => u.email === email);
 };
+
+// Mock verification code for password reset (demo)
+export const mockVerificationCode = '1234';
